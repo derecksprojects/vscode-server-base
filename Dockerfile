@@ -23,17 +23,33 @@ RUN apt-get update && \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install nvm and Node.js LTS version
+ENV NVM_DIR="/usr/local/nvm"
+ENV NODE_VERSION="lts/*"
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash && \
+    . $NVM_DIR/nvm.sh && \
+    nvm install $NODE_VERSION && \
+    nvm use $NODE_VERSION && \
+    nvm alias default $NODE_VERSION && \
+    ln -s $NVM_DIR/versions/node/$(nvm version default)/bin/node /usr/local/bin/node && \
+    ln -s $NVM_DIR/versions/node/$(nvm version default)/bin/npm /usr/local/bin/npm && \
+    ln -s $NVM_DIR/versions/node/$(nvm version default)/bin/npx /usr/local/bin/npx
+
+# Ensure nvm is available for future commands
+ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
 # Create user and setup directories for VS Code Server
-# Use an entrypoint script to handle user creation at runtime
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Install code-server as root
-RUN curl -fsSL https://code-server.dev/install.sh | sh
+# Install code-server as root using npm
+RUN npm install -g code-server@latest
 
 # Create SSL certificates directory
 RUN mkdir -p /etc/code-server
 
+# Expose the necessary ports
 EXPOSE 8000-9000
 
+# Set the entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
