@@ -1,16 +1,12 @@
 FROM ubuntu:22.04
 
-# Define ENVs without defaults - these will be required at runtime
-ENV USERNAME=""
-ENV PORT=""
-ENV PASSWORD=""
-ENV HOME=""
+# Environment variables
+ARG USERNAME=developer
+ARG PASSWORD=password
+ARG PORT=8443
 
-WORKDIR /workspace
-
-# Install necessary packages
-RUN apt-get update && \
-    apt-get install -y \
+# Install essential tools
+RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     wget \
@@ -21,19 +17,31 @@ RUN apt-get update && \
     nano \
     zsh \
     openssl \
+    ca-certificates \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Create user and setup directories for VS Code Server
-# Use an entrypoint script to handle user creation at runtime
+# Install Node.js and npm for arm/v7 compatibility with code-server
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@latest
+
+# Add entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Install code-server as root
-RUN curl -fsSL https://code-server.dev/install.sh | sh
+# Install code-server
+RUN curl -fsSL https://code-server.dev/install.sh | bash || \
+    npm install -g code-server
 
-# Create SSL certificates directory
-RUN mkdir -p /etc/code-server
+# Create a non-root user
+RUN useradd -ms /bin/bash -G sudo $USERNAME && \
+    echo "$USERNAME:$PASSWORD" | chpasswd && \
+    mkdir -p /home/$USERNAME && \
+    chown -R $USERNAME:$USERNAME /home/$USERNAME
 
-EXPOSE 8000-9000
+# Expose the port for code-server
+EXPOSE $PORT
 
+# Set the entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
