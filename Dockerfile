@@ -5,6 +5,8 @@ ENV USERNAME=""
 ENV PORT=""
 ENV PASSWORD=""
 ENV HOME=""
+ENV NVM_DIR="/usr/local/nvm"
+ENV NODE_VERSION="lts/*"
 
 WORKDIR /workspace
 
@@ -20,13 +22,12 @@ RUN apt-get update && \
     net-tools \
     nano \
     zsh \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
+    openssl && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install nvm and Node.js LTS version
-ENV NVM_DIR="/usr/local/nvm"
-ENV NODE_VERSION="lts/*"
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash && \
+RUN mkdir -p $NVM_DIR && \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash && \
     . $NVM_DIR/nvm.sh && \
     nvm install $NODE_VERSION && \
     nvm use $NODE_VERSION && \
@@ -35,8 +36,8 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | b
     ln -s $NVM_DIR/versions/node/$(nvm version default)/bin/npm /usr/local/bin/npm && \
     ln -s $NVM_DIR/versions/node/$(nvm version default)/bin/npx /usr/local/bin/npx
 
-# Ensure nvm is available for future commands
-ENV PATH=$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+# Export PATH to ensure nvm and Node.js tools are available
+ENV PATH=$NVM_DIR/versions/node/$(nvm alias default | grep -o 'v[0-9\.]*')/bin:$PATH
 
 # Create user and setup directories for VS Code Server
 COPY entrypoint.sh /entrypoint.sh
