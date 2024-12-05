@@ -30,9 +30,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Install code-server
+# Install code-server with --unsafe-perm to fix permission issues
 RUN curl -fsSL https://code-server.dev/install.sh | bash || \
-    npm install -g code-server
+    npm install -g --unsafe-perm code-server
 
 # Create a non-root user
 RUN useradd -ms /bin/bash -G sudo $USERNAME && \
