@@ -1,11 +1,10 @@
+# Use a base Ubuntu image
 FROM ubuntu:22.04
 
-# Environment variables for container configuration
-ARG USERNAME=developer
-ARG PASSWORD=password
-ARG PORT=8443
+# Set environment variables for non-interactive installation
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install essential tools
+# Update and install base dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -18,32 +17,41 @@ RUN apt-get update && apt-get install -y \
     zsh \
     openssl \
     ca-certificates \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
+    gnupg && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js and npm (required for code-server npm installation)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
+# Add Node.js 18.x repository
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@latest
 
-# Ensure the installation environment is clean and ready
+# Ensure npm cache is clean and retry on failure
 RUN npm cache clean --force && \
-    rm -rf /usr/lib/node_modules/code-server
+    npm config set registry https://registry.npmjs.org/ && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 10000 && \
+    npm config set fetch-retry-maxtimeout 30000
 
-# Install code-server globally using npm with proper permissions
+# Install code-server globally
 RUN npm install -g --unsafe-perm code-server
 
-# Add entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Create a user and set permissions
+ARG USERNAME=developer
+ARG PASSWORD=password
+RUN useradd -m -s /bin/zsh ${USERNAME} && \
+    echo "${USERNAME}:${PASSWORD}" | chpasswd && \
+    usermod -aG sudo ${USERNAME}
 
-# Create a non-root user and configure environment
-RUN useradd -ms /bin/bash -G sudo $USERNAME && \
-    echo "$USERNAME:$PASSWORD" | chpasswd && \
-    mkdir -p /home/$USERNAME && \
-    chown -R $USERNAME:$USERNAME /home/$USERNAME
+# Expose the default VS Code Server port
+EXPOSE 8443
 
-# Expose the port for code-server
-EXPOSE $PORT
+# Set the entrypoint script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Set the entrypoint
-ENTRYPOINT ["/entrypoint.sh"]
+# Set working directory and user
+WORKDIR /home/${USERNAME}
+USER ${USERNAME}
+
+# Default command
+ENTRYPOINT ["entrypoint.sh"]
