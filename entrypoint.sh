@@ -1,19 +1,21 @@
 #!/bin/bash
+set -e
 
-# Generate SSL certificates for HTTPS if they don't exist
-if [ ! -f /home/${USERNAME}/.ssl/cert.pem ]; then
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout /home/${USERNAME}/.ssl/key.pem \
-        -out /home/${USERNAME}/.ssl/cert.pem \
-        -subj "/CN=localhost" 
+# Default values for user-configurable parameters
+USERNAME="${USERNAME:-developer}"
+PASSWORD="${PASSWORD:-password}"
+WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
+
+# Create the user and set password
+if ! id -u "$USERNAME" &>/dev/null; then
+    useradd -m -s /bin/bash "$USERNAME"
+    echo "$USERNAME:$PASSWORD" | chpasswd
+    echo "User $USERNAME created with the specified password."
 fi
 
-# Ensure correct permissions
-chmod 600 /home/${USERNAME}/.ssl/key.pem /home/${USERNAME}/.ssl/cert.pem
+# Ensure the workspace directory exists and set permissions
+mkdir -p "$WORKSPACE_DIR"
+chown -R "$USERNAME:$USERNAME" "$WORKSPACE_DIR"
 
-# Start code-server with proper configuration
-exec code-server \
-    --bind-addr 0.0.0.0:${PORT} \
-    --auth password \
-    --cert /home/${USERNAME}/.ssl/cert.pem \
-    --cert-key /home/${USERNAME}/.ssl/key.pem
+# Run code-server as the specified user
+exec su - "$USERNAME" -c "code-server $*"

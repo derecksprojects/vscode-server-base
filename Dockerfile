@@ -1,60 +1,34 @@
-# Base image
-FROM ubuntu:22.04
+# Use a base Ubuntu image
+FROM ubuntu:20.04
 
-# Set environment variables with defaults
-ENV USERNAME=developer \
-    PASSWORD=password \
-    PORT=8443
-
-# Avoid interactive prompts during build
+# Set environment variables to minimize user prompts during install
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
+# Install basic tools
 RUN apt-get update && apt-get install -y \
-    git \
     curl \
     wget \
-    build-essential \
-    vim \
-    nano \
-    zsh \
-    net-tools \
-    python3 \
-    python3-pip \
     sudo \
+    zip \
+    unzip \
     gnupg \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
+    software-properties-common \
+    build-essential \
+    && apt-get clean
 
-# Install Node.js 20.x and explicitly pin to 20.11.1
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs=20.11.1* \
-    && npm install -g npm@latest
+# Install VS Code Server
+RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# Install latest code-server
-RUN export NODE_OPTIONS=--no-warnings && \
-    npm install -g --unsafe-perm code-server@latest
+# Set up the working directory
+WORKDIR /workspace
 
-# Create a user and configure the environment
-RUN useradd -m -s /bin/zsh ${USERNAME} \
-    && echo "${USERNAME}:${PASSWORD}" | chpasswd \
-    && usermod -aG sudo ${USERNAME}
-
-# Create SSL directory
-RUN mkdir -p /home/${USERNAME}/.ssl && \
-    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssl
-
-# Expose port for VS Code Server
-EXPOSE ${PORT}
-
-# Set up the entrypoint script
+# Create an entrypoint script
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Switch to the created user
-USER ${USERNAME}
-WORKDIR /home/${USERNAME}
+# Expose the default VS Code server port
+EXPOSE 8080
 
-# Set entrypoint
+# Set the entrypoint script
 ENTRYPOINT ["entrypoint.sh"]
+CMD ["--bind-addr", "0.0.0.0:8080"]
