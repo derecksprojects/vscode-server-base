@@ -35,5 +35,5 @@ jobs:
         with:
           push: true
           tags: |
-            vscode-server-base:latest
+            dereckmezquita/vscode-server-base:latest
           platforms: linux/amd64,linux/arm64
