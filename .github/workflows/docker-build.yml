@@ -35,5 +35,5 @@ jobs:
         with:
           push: true
           tags: |
-            my-vscode-server:latest
+            vscode-server-base:latest
           platforms: linux/amd64,linux/arm64
