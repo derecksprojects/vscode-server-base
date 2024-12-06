@@ -22,11 +22,11 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 # Set up the working directory
 WORKDIR /workspace
 
-# Create an entrypoint script
+# Create an updated entrypoint script
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Expose the default VS Code server port
+# Expose the default VS Code server port (dynamic binding will handle specifics)
 EXPOSE 8080
 
 # Set the entrypoint script

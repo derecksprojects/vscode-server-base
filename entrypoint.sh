@@ -5,6 +5,7 @@ set -e
 USERNAME="${USERNAME:-developer}"
 PASSWORD="${PASSWORD:-password}"
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
+HOST_PORT="${HOST_PORT:-8080}"
 
 # Create the user and set password
 if ! id -u "$USERNAME" &>/dev/null; then
@@ -17,5 +18,5 @@ fi
 mkdir -p "$WORKSPACE_DIR"
 chown -R "$USERNAME:$USERNAME" "$WORKSPACE_DIR"
 
-# Run code-server as the specified user
-exec su - "$USERNAME" -c "code-server $*"
+# Dynamically bind to the specified address and port
+exec su - "$USERNAME" -c "code-server --bind-addr 0.0.0.0:${HOST_PORT} $*"
