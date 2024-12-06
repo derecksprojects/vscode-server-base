@@ -26,14 +26,14 @@ RUN apt-get update && apt-get install -y \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 20.x and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+# Install Node.js 18.x (required by code-server@4.20.0)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get update \
     && apt-get install -y nodejs \
     && npm install -g npm@latest
 
-# Install code-server with explicit version that's compatible with Node 20
-RUN npm install -g --unsafe-perm code-server@4.20.0
+# Install code-server with explicit version
+RUN FORCE_NODE_VERSION=1 npm install -g --unsafe-perm code-server@4.20.0
 
 # Create a user and configure the environment
 RUN useradd -m -s /bin/zsh ${USERNAME} \
