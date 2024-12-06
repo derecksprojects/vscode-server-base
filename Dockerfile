@@ -23,20 +23,26 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     sudo \
     gnupg \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+# Install Node.js 20.x and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get update \
     && apt-get install -y nodejs \
     && npm install -g npm@latest
 
-# Install code-server
-RUN npm install -g --unsafe-perm code-server@latest
+# Install code-server with explicit version that's compatible with Node 20
+RUN npm install -g --unsafe-perm code-server@4.20.0
 
 # Create a user and configure the environment
 RUN useradd -m -s /bin/zsh ${USERNAME} \
     && echo "${USERNAME}:${PASSWORD}" | chpasswd \
     && usermod -aG sudo ${USERNAME}
+
+# Create SSL directory
+RUN mkdir -p /home/${USERNAME}/.ssl && \
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}/.ssl
 
 # Expose port for VS Code Server
 EXPOSE ${PORT}
